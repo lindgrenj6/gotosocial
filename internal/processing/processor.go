@@ -19,7 +19,6 @@ package processing
 
 import (
 	"context"
-
 	"github.com/superseriousbusiness/gotosocial/internal/email"
 	"github.com/superseriousbusiness/gotosocial/internal/federation"
 	"github.com/superseriousbusiness/gotosocial/internal/log"

@@ -253,3 +253,7 @@ func (t *timelineDB) GetFavedTimeline(ctx context.Context, accountID string, max
 	prevMinID := faves[0].ID
 	return statuses, nextMaxID, prevMinID, nil
 }
+
+func (t *timelineDB) GetConversationsTimeline(ctx context.Context, accountID string, limit int) ([]*gtsmodel.Status, db.Error) {
+	return nil, nil
+}

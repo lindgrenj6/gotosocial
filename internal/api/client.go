@@ -18,6 +18,7 @@
 package api
 
 import (
+	"github.com/superseriousbusiness/gotosocial/internal/api/client/conversations"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -71,6 +72,7 @@ type Client struct {
 	streaming      *streaming.Module      // api/v1/streaming
 	timelines      *timelines.Module      // api/v1/timelines
 	user           *user.Module           // api/v1/user
+	conversations  *conversations.Module  // api/v1/conversations
 }
 
 func (c *Client) Route(r router.Router, m ...gin.HandlerFunc) {
@@ -107,6 +109,7 @@ func (c *Client) Route(r router.Router, m ...gin.HandlerFunc) {
 	c.streaming.Route(h)
 	c.timelines.Route(h)
 	c.user.Route(h)
+	c.conversations.Route(h)
 }
 
 func NewClient(db db.DB, p *processing.Processor) *Client {
@@ -134,5 +137,6 @@ func NewClient(db db.DB, p *processing.Processor) *Client {
 		streaming:      streaming.New(p, time.Second*30, 4096),
 		timelines:      timelines.New(p),
 		user:           user.New(p),
+		conversations:  conversations.New(p),
 	}
 }

@@ -44,4 +44,6 @@ type Timeline interface {
 	//
 	// Also note the extra return values, which correspond to the nextMaxID and prevMinID for building Link headers.
 	GetFavedTimeline(ctx context.Context, accountID string, maxID string, minID string, limit int) ([]*gtsmodel.Status, string, string, Error)
+
+	GetConversationsTimeline(ctx context.Context, accountID string, limit int) ([]*gtsmodel.Status, Error)
 }

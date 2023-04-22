@@ -250,6 +250,36 @@ func (p *Processor) FavedTimelineGet(ctx context.Context, authed *oauth.Auth, ma
 	})
 }
 
+func (p *Processor) ConversationTimelineGet(ctx context.Context, authed *oauth.Auth, limit int) (*apimodel.PageableResponse, gtserror.WithCode) {
+	statuses, err := p.state.DB.GetConversationsTimeline(ctx, authed.Account.ID, limit)
+	if err != nil {
+		if err == db.ErrNoEntries {
+			return util.EmptyPageableResponse(), nil
+		}
+		return nil, gtserror.NewErrorInternalError(err)
+	}
+
+	filtered, err := p.filterConversationStatuses(ctx, authed, statuses)
+	if err != nil {
+		return nil, gtserror.NewErrorInternalError(err)
+	}
+
+	if len(filtered) == 0 {
+		return util.EmptyPageableResponse(), nil
+	}
+
+	items := []interface{}{}
+	for _, item := range filtered {
+		items = append(items, item)
+	}
+
+	return util.PackagePageableResponse(util.PageableResponseParams{
+		Items: items,
+		Path:  "api/v1/conversations",
+		Limit: limit,
+	})
+}
+
 func (p *Processor) filterPublicStatuses(ctx context.Context, authed *oauth.Auth, statuses []*gtsmodel.Status) ([]*apimodel.Status, error) {
 	apiStatuses := []*apimodel.Status{}
 	for _, s := range statuses {
@@ -301,6 +331,35 @@ func (p *Processor) filterFavedStatuses(ctx context.Context, authed *oauth.Auth,
 			continue
 		}
 		if !timelineable {
+			continue
+		}
+
+		apiStatus, err := p.tc.StatusToAPIStatus(ctx, s, authed.Account)
+		if err != nil {
+			log.Debugf(ctx, "skipping status %s because it couldn't be converted to its api representation: %s", s.ID, err)
+			continue
+		}
+
+		apiStatuses = append(apiStatuses, apiStatus)
+	}
+
+	return apiStatuses, nil
+}
+
+func (p *Processor) filterConversationStatuses(ctx context.Context, authed *oauth.Auth, statuses []*gtsmodel.Status) ([]*apimodel.Status, error) {
+	apiStatuses := []*apimodel.Status{}
+	for _, s := range statuses {
+		targetAccount := &gtsmodel.Account{}
+		if err := p.state.DB.GetByID(ctx, s.AccountID, targetAccount); err != nil {
+			if err == db.ErrNoEntries {
+				log.Debugf(ctx, "skipping status %s because account %s can't be found in the db", s.ID, s.AccountID)
+				continue
+			}
+			return nil, gtserror.NewErrorInternalError(fmt.Errorf("filterConversationStatuses: error getting status author: %s", err))
+		}
+
+		// only grabbing the conversations
+		if s.Visibility != "direct" {
 			continue
 		}
 
